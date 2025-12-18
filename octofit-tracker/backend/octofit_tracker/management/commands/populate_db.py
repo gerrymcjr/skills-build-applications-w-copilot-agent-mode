@@ -1,3 +1,6 @@
+"""
+Populate the octofit_db database with test data
+"""
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from octofit_tracker.models import UserProfile, Team, Activity
