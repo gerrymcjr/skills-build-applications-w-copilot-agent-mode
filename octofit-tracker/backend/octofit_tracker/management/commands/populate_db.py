@@ -12,30 +12,61 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write('Populating test data...')
 
-        # Create users
-        users = []
-        for i in range(1, 4):
-            username = f'user{i}'
-            user, created = User.objects.get_or_create(username=username, defaults={
-                'email': f'{username}@example.com',
-            })
+        # Delete old data
+        Activity.objects.all().delete()
+        Team.objects.all().delete()
+        UserProfile.objects.all().delete()
+        User = get_user_model()
+        # Djongo workaround: delete non-superuser users one by one
+        for user in User.objects.all():
+            if not user.is_superuser:
+                user.delete()
+
+        # Superhero users
+        marvel_heroes = [
+            {'username': 'ironman', 'email': 'ironman@marvel.com', 'bio': 'Genius, billionaire, playboy, philanthropist.'},
+            {'username': 'captainamerica', 'email': 'cap@marvel.com', 'bio': 'The First Avenger.'},
+            {'username': 'spiderman', 'email': 'spiderman@marvel.com', 'bio': 'Friendly neighborhood Spider-Man.'},
+        ]
+        dc_heroes = [
+            {'username': 'batman', 'email': 'batman@dc.com', 'bio': 'The Dark Knight.'},
+            {'username': 'superman', 'email': 'superman@dc.com', 'bio': 'Man of Steel.'},
+            {'username': 'wonderwoman', 'email': 'wonderwoman@dc.com', 'bio': 'Amazonian warrior princess.'},
+        ]
+
+        marvel_users = []
+        dc_users = []
+        for hero in marvel_heroes:
+            user, created = User.objects.get_or_create(username=hero['username'], defaults={'email': hero['email']})
             if created:
                 user.set_password('password')
                 user.save()
-            users.append(user)
+            marvel_users.append(user)
+            UserProfile.objects.get_or_create(user=user, defaults={'bio': hero['bio']})
 
-        # Create profiles
-        for user in users:
-            UserProfile.objects.get_or_create(user=user, defaults={'bio': f'Test bio for {user.username}'})
+        for hero in dc_heroes:
+            user, created = User.objects.get_or_create(username=hero['username'], defaults={'email': hero['email']})
+            if created:
+                user.set_password('password')
+                user.save()
+            dc_users.append(user)
+            UserProfile.objects.get_or_create(user=user, defaults={'bio': hero['bio']})
 
-        # Create team and add members
-        team, _ = Team.objects.get_or_create(name='Team Alpha')
-        team.members.set(users)
-        team.save()
+        # Create teams
+        marvel_team, _ = Team.objects.get_or_create(name='Team Marvel')
+        marvel_team.members.set(marvel_users)
+        marvel_team.save()
+
+        dc_team, _ = Team.objects.get_or_create(name='Team DC')
+        dc_team.members.set(dc_users)
+        dc_team.save()
 
         # Create activities
-        Activity.objects.create(user=users[0], activity_type='run', duration_minutes=30, distance_km=5.0, timestamp=timezone.now())
-        Activity.objects.create(user=users[1], activity_type='cycle', duration_minutes=45, distance_km=20.0, timestamp=timezone.now())
-        Activity.objects.create(user=users[2], activity_type='walk', duration_minutes=60, distance_km=4.0, timestamp=timezone.now())
+        Activity.objects.create(user=marvel_users[0], activity_type='run', duration_minutes=40, distance_km=10.0, timestamp=timezone.now())
+        Activity.objects.create(user=marvel_users[1], activity_type='cycle', duration_minutes=60, distance_km=25.0, timestamp=timezone.now())
+        Activity.objects.create(user=marvel_users[2], activity_type='walk', duration_minutes=30, distance_km=3.0, timestamp=timezone.now())
+        Activity.objects.create(user=dc_users[0], activity_type='run', duration_minutes=50, distance_km=12.0, timestamp=timezone.now())
+        Activity.objects.create(user=dc_users[1], activity_type='swim', duration_minutes=35, distance_km=2.0, timestamp=timezone.now())
+        Activity.objects.create(user=dc_users[2], activity_type='cycle', duration_minutes=70, distance_km=30.0, timestamp=timezone.now())
 
-        self.stdout.write(self.style.SUCCESS('Populated octofit_db with sample users, profiles, teams, and activities'))
+        self.stdout.write(self.style.SUCCESS('Populated octofit_db with superhero users, profiles, teams, and activities'))
