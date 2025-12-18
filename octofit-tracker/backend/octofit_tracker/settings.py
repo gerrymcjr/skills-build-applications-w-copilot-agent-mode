@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     # Third-party
     'rest_framework',
     'corsheaders',
+    # 'djongo',  # (for workflow check)
     # Local apps
     'octofit_tracker',
 ]
